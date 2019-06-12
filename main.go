@@ -1,19 +1,44 @@
 package main
 
-func main() {
+import (
+	"fmt"
+	"github.com/guoyueqiang2013/goim/ctrl"
+	"html/template"
+	"log"
+	"net/http"
+)
 
+//万能模板渲染
+func RegisterView() {
+	tpl, err := template.ParseGlob("view/**/*")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	for _, v := range tpl.Templates() {
+		tplname := v.Name()
+		fmt.Printf("Tpl name : %s\n", tplname)
+		http.HandleFunc(tplname, func(writer http.ResponseWriter,
+			request *http.Request) {
+			tpl.ExecuteTemplate(writer, tplname, nil)
+		})
+
+	}
 }
 
-//消息体核心
-type Message struct {
-	Id      int64  `json:"id,omitempty" form:"id"`           //消息id
-	Userid  int64  `json:"userid,omitempty" form:"userid"`   //谁发的
-	Cmd     int    `json:"cmd,omitempty" form:"cmd"`         //群聊还是私聊
-	Dstid   int64  `json:"dstid,omitempty" form:"dstid"`     //对端ID 或 群ID
-	Media   int    `json:"media,omitempty" form:"media"`     //消息样式
-	Content string `json:"content,omitempty" form:"content"` //消息内容
-	Pic     string `json:"pic,omitempty" form:"pic"`         //预览图片
-	Url     string `json:"url,omitempty" form:"url"`         //服务的URL
-	Memo    string `json:"memo,omitempty" form:"memo"`       //简单描述
-	Amount  int    `json:"amount,omitempty" form:"amount"`   //和数字相关的
+func main() {
+	http.HandleFunc("/contact/loadfriend", ctrl.LoadFriends)
+	http.HandleFunc("/contact/loadcommunity", ctrl.Community)
+	http.HandleFunc("/contact/addfriend", ctrl.AddFriend)
+	http.HandleFunc("/user/login", ctrl.Login)
+	http.HandleFunc("/user/register", ctrl.Register)
+	http.HandleFunc("/chat", ctrl.Chat)
+
+	//静态文件目录
+	http.Handle("/asset/", http.FileServer(http.Dir(".")))
+	RegisterView()
+	err := http.ListenAndServe("0.0.0.0:8080", nil)
+	if err != nil {
+		return
+	}
+
 }
